@@ -1,8 +1,28 @@
 import { VERTICALS, type BusinessType } from "./verticals";
 
 /** Capa de abstracción WhatsApp. MVP = LinkProvider (wa.me). Futuro: WebExtension / OfficialApi */
+
+/**
+ * Normaliza a formato internacional para wa.me.
+ * Colombia: 10 dígitos empezando por 3 -> prefijo 57. Acepta ya normalizados.
+ * Devuelve null si no es un móvil válido (la voz a veces transcribe mal).
+ */
+export function normalizePhone(raw: string): string | null {
+  const d = raw.replace(/\D/g, "");
+  const local = d.startsWith("57") && d.length === 12 ? d.slice(2) : d;
+  if (/^3\d{9}$/.test(local)) return "57" + local;
+  return null;
+}
+
+/** Formato corto para mostrar: 573001112233 -> 300 111 2233 */
+export function prettyPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "");
+  const local = d.startsWith("57") && d.length === 12 ? d.slice(2) : d;
+  if (local.length === 10) return `${local.slice(0, 3)} ${local.slice(3, 6)} ${local.slice(6)}`;
+  return phone;
+}
 export function buildWaLink(phone: string, message: string): string {
-  const digits = phone.replace(/\D/g, "");
+  const digits = normalizePhone(phone) ?? phone.replace(/\D/g, "");
   return `https://wa.me/${digits}?text=${encodeURIComponent(message)}`;
 }
 

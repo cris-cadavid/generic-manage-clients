@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { orgFromApiKey } from "@/lib/api-keys";
 import { VERTICALS, type BusinessType } from "@/lib/verticals";
 import { DEFAULT_SCHEDULE, freeSlots, type Schedule } from "@/lib/slots";
-import { computeReactivation, buildWaLink, reactivationMessage } from "@/lib/whatsapp";
+import { computeReactivation, buildWaLink, reactivationMessage, normalizePhone } from "@/lib/whatsapp";
 import { money } from "@/lib/es";
 
 export const runtime = "nodejs";
@@ -122,10 +122,10 @@ function buildServer(orgId: string): McpServer {
     description: "Registra un cliente. Teléfono y correo son únicos por negocio.",
     inputSchema: { nombre: z.string(), telefono: z.string(), correo: z.string().optional(), notas: z.string().optional(), cumpleanos: z.string().optional() },
   }, async ({ nombre, telefono, correo, notas, cumpleanos }) => {
-    const phone = telefono.replace(/\D/g, "");
+    const phone = normalizePhone(telefono);
     const email = correo?.toLowerCase().trim() || null;
-    if (!nombre.trim() || !phone) return fail("Faltan nombre o teléfono");
-    if (email && !emailOk(email)) return fail("Correo no válido");
+    if (!nombre.trim() || !phone) return fail("Teléfono inválido: pide al cliente sus 10 dígitos de nuevo, despacio y por grupos.");
+    if (email && !emailOk(email)) return fail("Correo no válido: pide que lo deletree.");
     try {
       const c = await db.customer.create({ data: { orgId, name: nombre.trim(), phone, email, notes: notas ?? "", birthdate: cumpleanos ? new Date(cumpleanos) : null } });
       return ok({ id: c.id, mensaje: `Cliente "${c.name}" creado` });
@@ -182,9 +182,10 @@ function buildServer(orgId: string): McpServer {
       profesional: z.string(), servicio: z.string(), fecha: z.string(), hora: z.string(),
     },
   }, async ({ cliente_nombre, cliente_telefono, cliente_correo, profesional, servicio, fecha, hora }) => {
-    const phone = cliente_telefono.replace(/\D/g, "");
+    const phone = normalizePhone(cliente_telefono);
     const email = cliente_correo.toLowerCase().trim();
-    if (!emailOk(email)) return fail("Correo del cliente no válido");
+    if (!phone) return fail("Teléfono inválido: pide al cliente sus 10 dígitos de nuevo, despacio y por grupos. No reserves sin teléfono válido.");
+    if (!emailOk(email)) return fail("Correo del cliente no válido: pide que lo deletree.");
     const [p, s] = await Promise.all([findStaff(orgId, profesional), findService(orgId, servicio)]);
     if (!p) return fail(`No encontré al profesional "${profesional}"`);
     if (!s) return fail(`No encontré el servicio "${servicio}"`);

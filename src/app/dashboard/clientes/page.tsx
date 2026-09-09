@@ -1,6 +1,6 @@
 import { requireTenant } from "@/lib/tenant";
 import { db } from "@/lib/db";
-import { buildWaLink } from "@/lib/whatsapp";
+import { buildWaLink, normalizePhone } from "@/lib/whatsapp";
 import { PageHeader, Card, ErrorBanner, inputCls, btnPrimary } from "@/components/ui";
 import { MessageCircle, Search, UserPlus, Users } from "lucide-react";
 import { revalidatePath } from "next/cache";
@@ -11,10 +11,10 @@ async function create(form: FormData) {
   "use server";
   const { orgId } = await requireTenant();
   const name = String(form.get("name") ?? "").trim();
-  const phone = String(form.get("phone") ?? "").replace(/\D/g, "");
+  const phone = normalizePhone(String(form.get("phone") ?? ""));
   const email = String(form.get("email") ?? "").toLowerCase().trim() || null;
   const notes = String(form.get("notes") ?? "");
-  if (!name || !phone) redirect("/dashboard/clientes?err=Faltan+nombre+o+teléfono");
+  if (!name || !phone) redirect("/dashboard/clientes?err=Teléfono+inválido:+usa+10+dígitos");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect("/dashboard/clientes?err=Correo+no+válido");
   try {
     await db.customer.create({ data: { orgId, name, phone, email, notes } });

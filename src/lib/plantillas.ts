@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 import { db } from "./db";
 import { DEFAULT_SCHEDULE } from "./slots";
+import { normalizePhone } from "./whatsapp";
 
 export type Entidad = "servicios" | "profesionales" | "clientes" | "productos";
 
@@ -101,9 +102,9 @@ export async function importar(orgId: string, entidad: Entidad, filas: Record<st
     const emailOk = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
     for (let i = 0; i < filas.length; i++) {
       const nombre = get(filas[i], "nombre");
-      const telefono = get(filas[i], "telefono").replace(/\D/g, "");
+      const telefono = normalizePhone(get(filas[i], "telefono"));
       const correo = get(filas[i], "correo", "email").toLowerCase() || null;
-      if (!nombre || !telefono) { res.errores.push(`Fila ${i + 2}: faltan nombre o teléfono`); continue; }
+      if (!nombre || !telefono) { res.errores.push(`Fila ${i + 2}: faltan nombre o teléfono válido (10 dígitos)`); continue; }
       if (correo && !emailOk(correo)) { res.errores.push(`Fila ${i + 2}: correo no válido`); continue; }
       if (phones.has(telefono) || (correo && emails.has(correo))) { res.omitidos++; continue; }
       const cumple = get(filas[i], "cumpleanos", "cumpleaños");

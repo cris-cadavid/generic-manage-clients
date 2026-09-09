@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { DEFAULT_SCHEDULE, freeSlots, nextOpenDays, type Schedule } from "@/lib/slots";
 import { VERTICALS, type BusinessType } from "@/lib/verticals";
+import { normalizePhone } from "@/lib/whatsapp";
 import { money } from "@/lib/es";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -16,7 +17,7 @@ async function book(form: FormData) {
   "use server";
   const orgId = String(form.get("orgId"));
   const name = String(form.get("name") ?? "").trim();
-  const phone = String(form.get("phone") ?? "").replace(/\D/g, "");
+  const phone = normalizePhone(String(form.get("phone") ?? ""));
   const email = String(form.get("email") ?? "").toLowerCase().trim();
   const serviceId = String(form.get("serviceId"));
   const staffId = String(form.get("staffId"));
@@ -24,7 +25,7 @@ async function book(form: FormData) {
   const time = String(form.get("time"));
   const org = await db.organization.findUnique({ where: { id: orgId } });
   if (!org || !name || !phone || !email || !serviceId || !staffId || !date || !time)
-    redirect(`/book/error`);
+    redirect(`/book/${org?.slug ?? "error"}?err=Revisa+los+datos:+teléfono+de+10+dígitos+y+correo+válido`);
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect(`/book/${org.slug}?err=Correo+no+válido`);
   const [service, barber] = await Promise.all([
     db.service.findFirst({ where: { id: serviceId, orgId, active: true } }),

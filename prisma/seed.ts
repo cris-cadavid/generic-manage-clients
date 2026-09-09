@@ -41,7 +41,7 @@ async function main() {
   const juan = await prisma.customer.upsert({
     where: { id: "seed-juan" },
     update: {},
-    create: { id: "seed-juan", orgId: org.id, name: "Juan", phone: "3001112233" },
+    create: { id: "seed-juan", orgId: org.id, name: "Juan", phone: "573001112233" },
   });
   // 3 visitas hace 60/40/29 días → frecuencia ~15d, debería volver
   for (const daysAgo of [60, 40, 29]) {

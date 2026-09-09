@@ -1,5 +1,6 @@
 import { requireTenant } from "@/lib/tenant";
 import { db } from "@/lib/db";
+import { normalizePhone } from "@/lib/whatsapp";
 import { Card, Field, inputCls, btnPrimary, ErrorBanner } from "@/components/ui";
 import { ArrowLeft } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -10,11 +11,11 @@ async function save(form: FormData) {
   const { orgId } = await requireTenant();
   const id = String(form.get("id"));
   const name = String(form.get("name") ?? "").trim();
-  const phone = String(form.get("phone") ?? "").replace(/\D/g, "");
+  const phone = normalizePhone(String(form.get("phone") ?? ""));
   const email = String(form.get("email") ?? "").toLowerCase().trim() || null;
   const notes = String(form.get("notes") ?? "");
   const birthdate = String(form.get("birthdate") ?? "");
-  if (!name || !phone) redirect(`/dashboard/clientes/${id}/editar?err=Faltan+nombre+o+teléfono`);
+  if (!name || !phone) redirect(`/dashboard/clientes/${id}/editar?err=Teléfono+inválido:+usa+10+dígitos`);
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect(`/dashboard/clientes/${id}/editar?err=Correo+no+válido`);
   try {
     await db.customer.updateMany({ where: { id, orgId }, data: { name, phone, email, notes, birthdate: birthdate ? new Date(birthdate) : null } });
