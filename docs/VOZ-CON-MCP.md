@@ -97,6 +97,28 @@ y di que el barbero los contactará. Máximo 2 preguntas por turno.
 2. Asígnaselo a tu asistente → llama desde tu celular y repite el guion.
 3. Cuando funcione, ese número es el que publicas en Instagram/WhatsApp.
 
+## Alternativa: ¿y con mi cuenta de ChatGPT?
+
+Depende de **para quién** es la voz:
+
+**Para ti (dueño, gestionar hablando): SÍ, con matices.**
+ChatGPT acepta conectores MCP personalizados (Ajustes → modo desarrollador,
+plan de pago). Ahí puedes preguntar por texto *"¿quién debería volver esta
+semana?"* o *"registra corte de Juan"* y usa tus herramientas. Ojo con dos
+límites reales: las acciones de escritura completas están en beta sobre todo
+para planes Business/Enterprise, y el **modo voz NO tiene acceso a tus
+conectores personalizados** (verificado: funcionan en chat de texto, no en
+voz). Truco que sí sirve: el micrófono de **dictado** (convierte tu voz en
+texto del chat) — eso sí usa las herramientas porque sigue siendo el chat.
+
+**Para tus clientes (que llamen y los atienda una voz): NO.**
+ChatGPT no te da un número de teléfono que tus clientes puedan marcar.
+Para eso necesitas Vapi (Pasos 1–5 de arriba) o similar: número público +
+voz 24/7 conectada a tu MCP.
+
+En resumen: ChatGPT = tú hablas con tu negocio; Vapi = tus clientes hablan
+con tu negocio. Para la barbería que atiende sola, es Vapi.
+
 ## Solución de problemas
 
 | Síntoma | Causa probable | Qué hacer |

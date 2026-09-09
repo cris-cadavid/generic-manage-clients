@@ -266,10 +266,27 @@ export async function POST(req: Request): Promise<Response> {
     return Response.json({ error: "unauthorized: usa Authorization: Bearer <tu-clave-vuelve>" }, { status: 401 });
   }
   try {
+    const raw = await req.text();
+    let body: unknown = undefined;
+    try {
+      body = raw ? JSON.parse(raw) : undefined;
+      const msg = body as { method?: string; params?: { name?: string; arguments?: unknown } };
+      if (msg?.method === "tools/call") {
+        console.log(`[MCP ${authz.orgId.slice(0, 8)}] tool=${msg.params?.name} args=${JSON.stringify(msg.params?.arguments)?.slice(0, 300)}`);
+      } else {
+        console.log(`[MCP ${authz.orgId.slice(0, 8)}] ${msg?.method ?? "?"}`);
+      }
+    } catch { /* body no-JSON: sigue igual */ }
     const server = buildServer(authz.orgId);
     const transport = new WebStandardStreamableHTTPServerTransport({ sessionIdGenerator: undefined });
     await server.connect(transport);
-    return await transport.handleRequest(req);
+    const forward = new Request(req.url, { method: "POST", headers: req.headers, body: raw || undefined });
+    const res = await transport.handleRequest(forward);
+    try {
+      const text = await res.clone().text();
+      console.log(`[MCP ${authz.orgId.slice(0, 8)}] <- ${text.slice(0, 300)}`);
+    } catch { /* noop */ }
+    return res;
   } catch (e) {
     console.error("MCP error:", e);
     return Response.json({ error: "mcp error" }, { status: 500 });
