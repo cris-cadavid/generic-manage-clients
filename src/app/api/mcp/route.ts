@@ -34,6 +34,18 @@ const DIAS: Record<string, number> = {
 function buildServer(orgId: string): McpServer {
   const server = new McpServer({ name: "vuelve", version: "1.0.0" }, { capabilities: { tools: {} } });
 
+  server.registerTool("contexto_fecha", {
+    description: "Fecha de hoy y próximos 7 días con día de semana en español. LLÁMALA PRIMERO en cada llamada para resolver 'hoy', 'mañana' o fechas que diga el cliente.",
+  }, async () => {
+    const fmt = new Intl.DateTimeFormat("es-CO", { weekday: "long", day: "numeric", month: "long" });
+    const dias = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(Date.now() + i * 86400000);
+      dias.push({ fecha: d.toISOString().slice(0, 10), dia: fmt.format(d) });
+    }
+    return ok({ hoy: dias[0], manana: dias[1], proximos_7_dias: dias });
+  });
+
   server.registerTool("negocio_resumen", {
     description: "Describe el negocio conectado: tipo, etiquetas y cuántos servicios, profesionales, clientes y citas próximas tiene. Úsala primero para adaptarte.",
   }, async () => {
