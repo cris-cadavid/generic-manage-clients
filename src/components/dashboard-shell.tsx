@@ -10,6 +10,7 @@ import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import PushButton from "@/components/push-button";
 import LogoutButton from "@/components/logout-button";
+import OrgSwitcher, { type OrgOpt } from "@/components/org-switcher";
 
 export type NavItem = { href: string; label: string; icon: LucideIcon; exact?: boolean };
 
@@ -30,16 +31,16 @@ function buildNav(professionalPlural: string, servicePlural: string): NavItem[] 
   ];
 }
 
-function Sidebar({ orgName, icon, nav, orgSlug, onNav }: { orgName: string; icon: string; nav: NavItem[]; orgSlug: string; onNav?: () => void }) {
+function Sidebar({ orgName, icon, nav, orgSlug, orgs, currentId, onNav }: { orgName: string; icon: string; nav: NavItem[]; orgSlug: string; orgs: OrgOpt[]; currentId: string; onNav?: () => void }) {
   const pathname = usePathname();
   return (
     <div className="flex h-full flex-col bg-ink-950 text-stone-200">
       <div className="flex items-center gap-3 px-5 pb-5 pt-6">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-xl shadow-lg shadow-amber-500/20">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-300 to-amber-500 text-xl shadow-lg shadow-amber-500/20">
           {icon}
         </span>
-        <div className="min-w-0">
-          <p className="truncate font-bold leading-tight text-white">{orgName}</p>
+        <div className="min-w-0 flex-1">
+          <OrgSwitcher orgs={orgs} currentId={currentId} dark />
           <p className="text-xs font-medium tracking-wide text-amber-400/90">VUELVE · clientes que regresan</p>
         </div>
       </div>
@@ -69,14 +70,16 @@ function Sidebar({ orgName, icon, nav, orgSlug, onNav }: { orgName: string; icon
   );
 }
 
-export default function DashboardShell({ orgName, icon, professionalPlural, servicePlural, orgSlug, orgId, children }: { orgName: string; icon: string; professionalPlural: string; servicePlural: string; orgSlug: string; orgId: string; children: ReactNode }) {
+export default function DashboardShell({ orgName, icon, professionalPlural, servicePlural, orgSlug, orgId, orgs, children }: { orgName: string; icon: string; professionalPlural: string; servicePlural: string; orgSlug: string; orgId: string; orgs: OrgOpt[]; children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const nav = buildNav(professionalPlural, servicePlural);
   return (
     <div className="min-h-screen lg:flex">
       <div className="sticky top-0 z-30 flex items-center justify-between gap-2 border-b border-stone-200 bg-white/90 px-4 py-3 backdrop-blur lg:hidden">
         <button onClick={() => setOpen(true)} className="rounded-lg p-1.5 hover:bg-stone-100" aria-label="Abrir menú"><Menu size={22} /></button>
-        <p className="truncate text-sm font-bold">{icon} {orgName}</p>
+        <div className="min-w-0 flex-1 text-center">
+          <OrgSwitcher orgs={orgs} currentId={orgId} />
+        </div>
         <div className="flex items-center gap-1">
           <PushButton orgId={orgId} />
           <LogoutButton compact />
@@ -87,12 +90,12 @@ export default function DashboardShell({ orgName, icon, professionalPlural, serv
           <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
           <div className="absolute inset-y-0 left-0 w-72 max-w-[85vw]">
             <button onClick={() => setOpen(false)} className="absolute right-2 top-2 z-10 rounded-lg p-1.5 text-stone-400 hover:bg-white/10" aria-label="Cerrar"><X size={20} /></button>
-            <Sidebar orgName={orgName} icon={icon} nav={nav} orgSlug={orgSlug} onNav={() => setOpen(false)} />
+            <Sidebar orgName={orgName} icon={icon} nav={nav} orgSlug={orgSlug} orgs={orgs} currentId={orgId} onNav={() => setOpen(false)} />
           </div>
         </div>
       )}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 lg:block">
-        <Sidebar orgName={orgName} icon={icon} nav={nav} orgSlug={orgSlug} />
+        <Sidebar orgName={orgName} icon={icon} nav={nav} orgSlug={orgSlug} orgs={orgs} currentId={orgId} />
       </aside>
       <div className="min-w-0 flex-1">
         <div className="sticky top-0 z-20 hidden items-center justify-end gap-3 border-b border-stone-200/70 bg-[#f6f4ef]/85 px-8 py-2.5 backdrop-blur lg:flex">
