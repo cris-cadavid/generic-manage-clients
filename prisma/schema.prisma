@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Auth.js (Google OAuth + Credentials) ----------
+model User {
+  id            String       @id @default(cuid())
+  name          String?
+  email         String?      @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  accounts      Account[]
+  sessions      Session[]
+  memberships   Membership[]
+  pushSubs      PushSubscription[]
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Multi-tenant núcleo ----------
+enum BusinessType {
+  barber
+  salon
+  spa
+  pets
+  cafe
+  laundry
+  fitness
+  tattoo
+  other
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  STAFF
+}
+
+model Organization {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  name         String
+  businessType BusinessType @default(barber)
+  phone        String?
+  address      String?
+  settings     Json         @default("{}")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  memberships  Membership[]
+  staff        Staff[]
+  services     Service[]
+  customers    Customer[]
+  appointments Appointment[]
+  sales        Sale[]
+  templates    MessageTemplate[]
+  products     Product[]
+  movements    StockMovement[]
+  pushSubs     PushSubscription[]
+  invitations  Invitation[]
+}
+
+model Membership {
+  id        String       @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role         @default(OWNER)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+  @@index([userId])
+}
+
+model Staff {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  phone     String?
+  services  String[] @default([])
+  schedule  Json     @default("{}")
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  sales        Sale[]
+
+  @@index([orgId])
+}
+
+model Service {
+  id          String   @id @default(cuid())
+  orgId       String
+  name        String
+  priceCents  Int      @default(0)
+  durationMin Int      @default(30)
+  bufferMin   Int      @default(0)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  sales        Sale[]
+
+  @@index([orgId])
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  phone     String
+  email     String?
+  birthdate DateTime?
+  notes     String?  @db.Text
+  tags      String[] @default([])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+  sales        Sale[]
+
+  @@unique([orgId, phone])
+  @@unique([orgId, email])
+  @@index([orgId])
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+model Appointment {
+  id         String            @id @default(cuid())
+  orgId      String
+  customerId String
+  staffId    String
+  serviceId  String
+  startsAt   DateTime          @db.Timestamptz
+  endsAt     DateTime          @db.Timestamptz
+  status     AppointmentStatus @default(PENDING)
+  notes      String?
+  createdAt  DateTime          @default(now())
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  staff      Staff        @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  service    Service      @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, startsAt])
+  @@index([staffId, startsAt])
+  @@index([customerId, startsAt])
+}
+
+model Sale {
+  id         String   @id @default(cuid())
+  orgId      String
+  customerId String?
+  staffId    String?
+  serviceId  String?
+  amountCents Int
+  date       DateTime @default(now()) @db.Timestamptz
+  notes      String?
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  customer   Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  staff      Staff?       @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  service    Service?     @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, date])
+}
+
+model MessageTemplate {
+  id        String   @id @default(cuid())
+  orgId     String
+  key       String // reminder | reactivation | birthday | confirmation
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, key])
+}
+
+// ---------- Barbería: inventario ----------
+enum MovementType {
+  ENTRADA
+  SALIDA
+  AJUSTE
+  CONSUMO
+}
+
+model Product {
+  id         String   @id @default(cuid())
+  orgId      String
+  name       String
+  category   String   @default("General")
+  sku        String?
+  costCents  Int      @default(0)
+  priceCents Int      @default(0)
+  stock      Int      @default(0)
+  minStock   Int      @default(5)
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  org        Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  movements  StockMovement[]
+
+  @@index([orgId])
+}
+
+model StockMovement {
+  id        String       @id @default(cuid())
+  orgId     String
+  productId String
+  type      MovementType
+  qty       Int
+  reason    String?
+  createdAt DateTime     @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, productId])
+}
+
+// ---------- Invitaciones al equipo ----------
+model Invitation {
+  id         String    @id @default(cuid())
+  orgId      String
+  email      String
+  role       Role      @default(STAFF)
+  token      String    @unique
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+// ---------- Push notifications (Web Push, sin proveedor) ----------
+model PushSubscription {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}

@@ -1,36 +1,34 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Generic Manage Clients
 
-## Getting Started
+SaaS genérico para negocios con clientes recurrentes: **clientes → reservas → visitas → deberían volver → WhatsApp (wa.me)**.
 
-First, run the development server:
+Stack desacoplado (sin Supabase): Next.js 16 + Prisma 6 + Postgres + Auth.js v5 (Google + email).
+
+## Quickstart local (sin VPS, sin dominio)
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
+docker compose up -d db
+npx prisma migrate dev
+npm run db:seed   # demo@generic.local / demo1234
+npm run dev       # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Probar: login → onboarding crea negocio → `/dashboard` muestra "Deberían volver" (Juan, seed) con botón WhatsApp wa.me.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Google OAuth
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Ver `docs/SETUP-GOOGLE-OAUTH.md`. Sin claves Google, email+password funciona.
 
-## Learn More
+## Deploy $0
 
-To learn more about Next.js, take a look at the following resources:
+Ver `docs/DEPLOY-RENDER-NEON.md`: Neon (DB) + Render Web Free (app `*.onrender.com`) + cron-job.org.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Estructura
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `prisma/schema.prisma` — Org/Membership/Staff/Service/Customer/Appointment/Sale/Template + modelos Auth.js
+- `src/auth.ts` — Google + Credentials
+- `src/lib/tenant.ts` — aislamiento por orgId
+- `src/lib/verticals.ts` — `business_type` configurable (barber/salon/spa/pets/cafe/...)
+- `src/lib/whatsapp.ts` — `buildWaLink` + `computeReactivation` (regla promedio + margen 3d)
+- `src/app/dashboard` — KPIs + reactivación · `src/app/book/[slug]` — reserva pública

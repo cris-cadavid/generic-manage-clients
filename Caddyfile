@@ -1,0 +1,7 @@
+# Uso futuro en VPS con dominio. En Render/Neon no se usa.
+# tu-dominio.com {
+#   reverse_proxy app:3000
+# }
+:80 {
+  reverse_proxy app:3000
+}
