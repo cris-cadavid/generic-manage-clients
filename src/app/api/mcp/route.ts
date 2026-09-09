@@ -33,6 +33,8 @@ const DIAS: Record<string, number> = {
 
 function buildServer(orgId: string): McpServer {
   const server = new McpServer({ name: "vuelve", version: "1.0.0" }, { capabilities: { tools: {} } });
+  // NOTA VOZ (temporal): Vapi no permite desmarcar tools, así que las 9 de gestión
+  // están comentadas abajo. Solo activas las 7 de voz. Para revertir: descomentar.
 
   server.registerTool("contexto_fecha", {
     description: "Fecha de hoy y próximos 7 días con día de semana en español. LLÁMALA PRIMERO en cada llamada para resolver 'hoy', 'mañana' o fechas que diga el cliente.",
@@ -61,6 +63,7 @@ function buildServer(orgId: string): McpServer {
     return ok({ negocio: org.name, tipo: org.businessType, icono: v.icon, profesional: v.professionalLabel, servicio: v.serviceLabel, servicios, profesionales, clientes, citas_proximas: citas });
   });
 
+  /* VOZ-OFF temporal: crear_servicio
   server.registerTool("crear_servicio", {
     description: "Crea un servicio/producto del negocio con precio y duración.",
     inputSchema: { nombre: z.string(), precio: z.number(), duracion_min: z.number().default(30), buffer_min: z.number().default(0) },
@@ -68,11 +71,13 @@ function buildServer(orgId: string): McpServer {
     const s = await db.service.create({ data: { orgId, name: nombre.trim(), priceCents: Math.round(precio * 100), durationMin: Math.max(5, duracion_min), bufferMin: Math.max(0, buffer_min) } });
     return ok({ id: s.id, mensaje: `Servicio "${s.name}" creado: ${money(s.priceCents)}, ${s.durationMin} min` });
   });
+  */
 
   server.registerTool("listar_servicios", { description: "Lista los servicios activos del negocio." },
     async () => ok((await db.service.findMany({ where: { orgId, active: true }, orderBy: { name: "asc" } }))
       .map((s) => ({ nombre: s.name, precio: s.priceCents / 100, duracion_min: s.durationMin }))));
 
+  /* VOZ-OFF temporal: crear_profesional
   server.registerTool("crear_profesional", {
     description: "Agrega un profesional del negocio con horario Lun–Vie 9–19 por defecto (luego ajústalo con definir_horario).",
     inputSchema: { nombre: z.string(), telefono: z.string().optional(), servicios: z.array(z.string()).optional() },
@@ -86,10 +91,12 @@ function buildServer(orgId: string): McpServer {
     const p = await db.staff.create({ data: { orgId, name: nombre.trim(), phone: telefono ?? "", services: ids, schedule: DEFAULT_SCHEDULE } });
     return ok({ id: p.id, mensaje: `Profesional "${p.name}" creado${faltantes.length ? `. Ojo, no encontré estos servicios: ${faltantes.join(", ")}` : ""}` });
   });
+  */
 
   server.registerTool("listar_profesionales", { description: "Lista los profesionales activos del negocio." },
     async () => ok((await db.staff.findMany({ where: { orgId, active: true }, orderBy: { name: "asc" } })).map((p) => ({ nombre: p.name, telefono: p.phone }))));
 
+  /* VOZ-OFF temporal: definir_horario
   server.registerTool("definir_horario", {
     description: "Define los días y horas que trabaja un profesional (eso determina los huecos de reserva). Días: lunes..domingo o 0..6.",
     inputSchema: {
@@ -109,6 +116,7 @@ function buildServer(orgId: string): McpServer {
     await db.staff.update({ where: { id: p.id }, data: { schedule: { slot: 30, days } as Schedule } });
     return ok({ mensaje: `Horario de ${p.name} actualizado: ${Object.keys(days).length} días` });
   });
+  */
 
   server.registerTool("crear_cliente", {
     description: "Registra un cliente. Teléfono y correo son únicos por negocio.",
@@ -126,6 +134,7 @@ function buildServer(orgId: string): McpServer {
     }
   });
 
+  /* VOZ-OFF temporal: buscar_cliente
   server.registerTool("buscar_cliente", {
     description: "Busca clientes por nombre, teléfono o correo.",
     inputSchema: { texto: z.string() },
@@ -133,7 +142,9 @@ function buildServer(orgId: string): McpServer {
     where: { orgId, OR: [{ name: { contains: texto, mode: "insensitive" } }, { phone: { contains: texto } }, { email: { contains: texto, mode: "insensitive" } }] },
     take: 10, include: { _count: { select: { sales: true } } },
   })).map((c) => ({ nombre: c.name, telefono: c.phone, correo: c.email, visitas: c._count.sales }))));
+  */
 
+  /* VOZ-OFF temporal: crear_producto
   server.registerTool("crear_producto", {
     description: "Agrega un producto al inventario con stock inicial.",
     inputSchema: { nombre: z.string(), categoria: z.string().optional(), precio: z.number(), costo: z.number().optional(), stock: z.number().optional(), minimo: z.number().optional() },
@@ -148,6 +159,7 @@ function buildServer(orgId: string): McpServer {
     if (p.stock > 0) await db.stockMovement.create({ data: { orgId, productId: p.id, type: "ENTRADA", qty: p.stock, reason: "Carga por IA" } });
     return ok({ id: p.id, mensaje: `Producto "${p.name}" creado con stock ${p.stock}` });
   });
+  */
 
   server.registerTool("consultar_disponibilidad", {
     description: "Huecos libres de un profesional para un servicio en una fecha (YYYY-MM-DD).",
@@ -196,6 +208,7 @@ function buildServer(orgId: string): McpServer {
     return ok({ mensaje: `Reserva creada: ${cliente_nombre} con ${p.name}, ${s.name}, ${fecha} ${hora}` });
   });
 
+  /* VOZ-OFF temporal: registrar_venta
   server.registerTool("registrar_venta", {
     description: "Registra una venta/visita ya realizada. Cliente se busca por nombre, teléfono o correo.",
     inputSchema: { cliente: z.string(), servicio: z.string().optional(), profesional: z.string().optional(), valor: z.number(), fecha: z.string().optional() },
@@ -211,7 +224,9 @@ function buildServer(orgId: string): McpServer {
     });
     return ok({ mensaje: `Venta de $${valor} registrada para ${found.name}` });
   });
+  */
 
+  /* VOZ-OFF temporal: candidatos_reactivar
   server.registerTool("candidatos_reactivar", {
     description: "Clientes que deberían volver (tardan más de lo normal), con enlace de WhatsApp listo para cada uno.",
   }, async () => {
@@ -237,12 +252,16 @@ function buildServer(orgId: string): McpServer {
       whatsapp: buildWaLink(c.phone, reactivationMessage(c.name, org.name, c.daysSince)),
     })));
   });
+  */
 
+  /* VOZ-OFF temporal: link_whatsapp
   server.registerTool("link_whatsapp", {
     description: "Genera un enlace wa.me con mensaje prellenado (el sistema NO envía solo: el comerciante toca el link).",
     inputSchema: { telefono: z.string(), mensaje: z.string() },
   }, async ({ telefono, mensaje }) => ok({ link: buildWaLink(telefono, mensaje) }));
+  */
 
+  /* VOZ-OFF temporal: resumen_panel
   server.registerTool("resumen_panel", {
     description: "KPIs del negocio: ingresos del mes, citas de hoy, clientes, reactivación e inactivos.",
   }, async () => {
@@ -268,6 +287,7 @@ function buildServer(orgId: string): McpServer {
     );
     return ok({ ingresos_mes: monthTotal / 100, citas_hoy: todayCount, clientes: customers.length, deberian_volver: cands.length });
   });
+  */
 
   return server;
 }
