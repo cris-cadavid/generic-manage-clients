@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, Users, Scissors, HandMetal,
-  ShoppingBag, Package, Megaphone, UsersRound, Settings, CalendarPlus, X, Menu, ArrowDownUp,
+  ShoppingBag, Package, Megaphone, UsersRound, Settings, CalendarPlus, X, Menu, ArrowDownUp, Bot,
   type LucideIcon,
 } from "lucide-react";
 import { useState, type ReactNode } from "react";
@@ -24,6 +24,7 @@ function buildNav(professionalPlural: string, servicePlural: string): NavItem[] 
     { href: "/dashboard/inventario", label: "Inventario", icon: Package },
     { href: "/dashboard/reactivar", label: "Reactivar", icon: Megaphone },
     { href: "/dashboard/importar", label: "Importar", icon: ArrowDownUp },
+    { href: "/dashboard/api", label: "IA conectada", icon: Bot },
     { href: "/dashboard/equipo", label: "Equipo", icon: UsersRound },
     { href: "/dashboard/config", label: "Ajustes", icon: Settings },
   ];

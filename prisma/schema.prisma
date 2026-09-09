@@ -19,6 +19,7 @@ model User {
   sessions      Session[]
   memberships   Membership[]
   pushSubs      PushSubscription[]
+  apiKeys       ApiKey[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
 }
@@ -97,6 +98,7 @@ model Organization {
   movements    StockMovement[]
   pushSubs     PushSubscription[]
   invitations  Invitation[]
+  apiKeys      ApiKey[]
 }
 
 model Membership {
@@ -275,6 +277,22 @@ model Invitation {
   acceptedAt DateTime?
   createdAt  DateTime  @default(now())
   org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+// ---------- API keys para MCP / integraciones ----------
+model ApiKey {
+  id         String    @id @default(cuid())
+  orgId      String
+  userId     String
+  name       String
+  prefix     String
+  hash       String    @unique
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([orgId])
 }
